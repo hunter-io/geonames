@@ -1,0 +1,26 @@
+# Downloaded zip files (these are large and can be regenerated)
+data/geonames/*.zip
+
+# Note: data/generated/*.go and *.gob files ARE committed as they're needed for the package to work
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
