@@ -42,3 +42,11 @@ This will:
 - `mapping.go` - GeoNames admin codes to ISO 3166-2 mapping
 - `data/generated/` - Generated lookup maps (one per country)
 - `scripts/download_geonames.go` - Data generation script
+
+## Credits
+
+This package uses data from [geonames.org](https://www.geonames.org/) and was inspired by the [mkrou/geonames](https://github.com/mkrou/geonames) Go parsing library.
+
+## License
+
+MIT
