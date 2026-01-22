@@ -1,0 +1,112 @@
+name: Update GeoNames Data
+
+on:
+  schedule:
+    # Run on the 1st day of every month at 00:00 UTC
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for tags
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get latest version tag
+        id: get_version
+        run: |
+          # Get the latest version tag, default to v0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          
+          # Extract version numbers (remove 'v' prefix)
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          
+          # Bump minor version
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="v${MAJOR}.${NEW_MINOR}.0"
+          
+          echo "current_version=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "new_minor=$NEW_MINOR" >> $GITHUB_OUTPUT
+
+      - name: Clean existing generated files
+        run: |
+          # Ensure directories exist
+          mkdir -p data/generated data/geonames
+          # Remove existing generated files to force fresh download
+          rm -f data/generated/*.go data/generated/*.gob
+          # Optionally clean zip files to force re-download
+          # rm -f data/geonames/*.zip
+
+      - name: Run data generation script
+        run: |
+          go run scripts/download_geonames.go
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          # Check if there are any changes in data/generated or go.sum
+          if git diff --quiet data/generated/ go.sum; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected in generated data files"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in generated data files"
+            git status
+            git diff --stat
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-geonames-data-${{ steps.get_version.outputs.new_version }}
+          title: "Update GeoNames data to ${{ steps.get_version.outputs.new_version }}"
+          body: |
+            ## Automated GeoNames Data Update
+            
+            This PR updates the GeoNames data files with the latest information from geonames.org.
+            
+            **Version:** ${{ steps.get_version.outputs.current_version }} → **${{ steps.get_version.outputs.new_version }}**
+            
+            ### Changes
+            - Updated GeoNames data files in `data/generated/`
+            - Updated `go.sum` if dependencies changed
+            
+            ### Next Step
+            After merging this PR, create a git tag for the new version:
+            ```bash
+            git tag ${{ steps.get_version.outputs.new_version }}
+            git push origin ${{ steps.get_version.outputs.new_version }}
+            ```
+            
+            This will enable Dependabot to suggest the new version to dependents.
+            
+            ---
+            *This PR was automatically created by the monthly data update workflow.*
+          commit-message: "Update GeoNames data to ${{ steps.get_version.outputs.new_version }}"
+          signoff: false
+          delete-branch: true
+
