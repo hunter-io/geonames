@@ -95,7 +95,7 @@ jobs:
             - Updated GeoNames data files in `data/generated/`
             - Updated `go.sum` if dependencies changed
             
-            ### Next Steps
+            ### Next Step
             After merging this PR, create a git tag for the new version:
             ```bash
             git tag ${{ steps.get_version.outputs.new_version }}
@@ -109,4 +109,4 @@ jobs:
           commit-message: "Update GeoNames data to ${{ steps.get_version.outputs.new_version }}"
           signoff: false
           delete-branch: true
-          
+
