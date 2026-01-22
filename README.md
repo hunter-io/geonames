@@ -19,7 +19,7 @@ if err != nil {
     log.Fatal(err)
 }
 fmt.Printf("ISO Code: %s, State: %s\n", result.ISOCode, result.State)
-// Output: ISO Code: DE-BE, State: 16
+// Output: ISO Code: DE-BE, State: BE
 ```
 
 ## Generating Data

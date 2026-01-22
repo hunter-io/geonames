@@ -87,12 +87,10 @@ var countries = []string{
 // GeonameEntry represents a geonames entry for lookup
 // Collisions are resolved during generation (highest population wins)
 // Population is not stored - only used during generation for collision resolution
+// Optimized: Only stores ISOCode since Name/AsciiName are map keys
+// and CountryCode/Admin1Code are redundant (can be derived from ISOCode if needed)
 type GeonameEntry struct {
-	Name        string
-	AsciiName   string
-	Admin1Code  string
-	CountryCode string
-	ISOCode     string // Pre-computed ISO 3166-2 code (e.g., "DE-BY", "FR-ARA")
+	ISOCode string // Pre-computed ISO 3166-2 code (e.g., "DE-BY", "FR-ARA")
 }
 
 // getISOCode looks up the ISO 3166-2 code for a given admin key (e.g., "DE.02" -> "DE-BY")
@@ -346,12 +344,9 @@ func processZipFile(zipPath, goPath, countryCode string) error {
 		isoCode := getISOCode(adminKey)
 
 		// Create entry with pre-computed ISO code
+		// Only store ISOCode - Name/AsciiName are map keys, CountryCode/Admin1Code are redundant
 		entry := &GeonameEntry{
-			Name:        name,
-			AsciiName:   asciiName,
-			Admin1Code:  admin1Code,
-			CountryCode: countryCode,
-			ISOCode:     isoCode,
+			ISOCode: isoCode,
 		}
 
 		// Helper function to add entry to temp map, resolving collisions by population
@@ -467,12 +462,10 @@ func generateTypesFile(typesPath string) error {
 	fmt.Fprintf(typesFile, "// GeonameEntry represents a geonames entry for lookup\n")
 	fmt.Fprintf(typesFile, "// Collisions are resolved during generation (highest population wins)\n")
 	fmt.Fprintf(typesFile, "// Population is not stored - only used during generation for collision resolution\n")
+	fmt.Fprintf(typesFile, "// Optimized: Only stores ISOCode since Name/AsciiName are map keys\n")
+	fmt.Fprintf(typesFile, "// and CountryCode/Admin1Code are redundant (can be derived from ISOCode if needed)\n")
 	fmt.Fprintf(typesFile, "type GeonameEntry struct {\n")
-	fmt.Fprintf(typesFile, "\tName        string\n")
-	fmt.Fprintf(typesFile, "\tAsciiName   string\n")
-	fmt.Fprintf(typesFile, "\tAdmin1Code  string\n")
-	fmt.Fprintf(typesFile, "\tCountryCode string\n")
-	fmt.Fprintf(typesFile, "\tISOCode     string // Pre-computed ISO 3166-2 code (e.g., \"DE-BY\", \"FR-ARA\")\n")
+	fmt.Fprintf(typesFile, "\tISOCode string // Pre-computed ISO 3166-2 code (e.g., \"DE-BY\", \"FR-ARA\")\n")
 	fmt.Fprintf(typesFile, "}\n\n")
 	fmt.Fprintf(typesFile, "// CityLookupMap is a map from lowercase city name to GeonameEntry\n")
 	fmt.Fprintf(typesFile, "type CityLookupMap map[string]*GeonameEntry\n\n")

@@ -59,8 +59,17 @@ func ResolveState(country, city string) (StateResult, error) {
 		return StateResult{}, fmt.Errorf("ISO code not found for city '%s' in country '%s'", city, country)
 	}
 
+	// Extract state code from ISOCode (e.g., "DE-BY" -> "BY")
+	state := ""
+	if entry.ISOCode != "" {
+		parts := strings.Split(entry.ISOCode, "-")
+		if len(parts) == 2 {
+			state = parts[1]
+		}
+	}
+
 	return StateResult{
 		ISOCode: entry.ISOCode,
-		State:   entry.Admin1Code,
+		State:   state,
 	}, nil
 }
