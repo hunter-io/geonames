@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: 
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Verify Go version
+        run: go version
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Check if data needs to be generated
+        id: check_data
+        run: |
+          if [ ! -f "data/generated/loader.go" ]; then
+            echo "needs_generation=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_generation=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate data files (if needed)
+        if: steps.check_data.outputs.needs_generation == 'true'
+        run: go run scripts/download_geonames.go
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Run tests with coverage
+        run: go test -v -coverprofile=coverage.out ./...
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./coverage.out
+          fail_ci_if_error: false
